@@ -282,12 +282,20 @@ function oa_core_form_node_form_alter(&$form, &$form_state, $form_id) {
   // we are in an edit form
   // autofill empty group audience field
   if (isset($form[OA_SPACE_FIELD]) && empty($form[OA_SPACE_FIELD][LANGUAGE_NONE][0]['default']['#default_value'])) {
-    if (!empty($_GET['og_group_ref'])) {
+    if (!empty($_GET['og_group_ref']) && !isset($node->type)) {
       $form[OA_SPACE_FIELD][LANGUAGE_NONE][0]['default']['#default_value'] = check_plain($_GET['og_group_ref']);
     }
     elseif (!empty($_SESSION['og_context']['gid'])) {
       $form[OA_SPACE_FIELD][LANGUAGE_NONE][0]['default']['#default_value'] = $_SESSION['og_context']['gid'];
     }
+  }
+
+  $gid = '';
+  if (!empty($_GET['og_group_ref'])) {
+    $gid = check_plain($_GET['og_group_ref']);
+  }
+  elseif (!empty($_SESSION['og_context']['gid'])) {
+    $gid = $_SESSION['og_context']['gid'];
   }
 
   // modify label on Panelizer layout field
@@ -426,10 +434,12 @@ function oa_core_add_member_api($group_type, $gid, $uid, $override = FALSE) {
     // Anonymous user can't request membership.
     $dest = drupal_get_destination();
     if (variable_get('user_register', 1)) {
-      $message = t('In order to join any group, you must <a href="!login">login</a>. After you have successfully done so, you will need to request membership again.', array('!login' => url("user/login", array('query' => $dest))));
+      $message = t('In order to join any group, you must <a href="!login">login</a>. After you have successfully done so, you will need to request membership again.',
+        array('!login' => url("user/login", array('query' => $dest))));
     }
     else {
-      $message = t('In order to join any group, you must <a href="!login">login</a> or <a href="!register">register</a> a new account. After you have successfully done so, you will need to request membership again.', array('!register' => url("user/register", array('query' => $dest)), '!login' => url("user/login", array('query' => $dest))));
+      $message = t('In order to join any group, you must <a href="!login">login</a> or <a href="!register">register</a> a new account. After you have successfully done so, you will need to request membership again.',
+        array('!register' => url("user/register", array('query' => $dest)), '!login' => url("user/login", array('query' => $dest))));
     }
   }
   elseif (!$override && og_is_member($entity_type, $gid, 'user', $account, array(OG_STATE_BLOCKED))) {
